@@ -1,0 +1,66 @@
+1. Machine Learning Model Loading
+
+import joblib
+
+model = joblib.load("models/heart_model.pkl")
+scaler = joblib.load("models/scaler.pkl")
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+2. Prediction Logic
+
+import numpy as np
+
+data = np.array([[52, 1, 2, 130, 250, 0, 1, 150, 0, 1.5, 1, 0, 2]])
+
+scaled = scaler.transform(data)
+
+prediction = model.predict(scaled)[0]
+probability = model.predict_proba(scaled)[0][1]
+
+result = "Heart Disease Likely" if prediction == 0 else "Not Likely"
+confidence = round(probability * 100, 2)
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+3. Flask Route for Prediction
+
+from flask import Blueprint, render_template, request
+
+pred_bp = Blueprint("pred", __name__)
+
+@pred_bp.route("/", methods=["GET", "POST"])
+def predict():
+    if request.method == "POST":
+        age = float(request.form.get("age"))
+        chol = float(request.form.get("chol"))
+
+        return render_template("result.html", result=result, confidence=confidence)
+
+    return render_template("form.html")
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+4. Database Storage
+import sqlite3
+
+conn = sqlite3.connect("heart.db")
+cursor = conn.cursor()
+
+cursor.execute("""
+INSERT INTO predictions (age, result, confidence)
+VALUES (?, ?, ?)
+""", (age, result, confidence))
+
+conn.commit()
+conn.close()
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+5. HTML Form (Frontend Input)
+
+<form method="POST">
+    <input type="number" name="age" placeholder="Age" required>
+    <input type="number" name="chol" placeholder="Cholesterol" required>
+    
+    <button type="submit">Predict</button>
+</form>
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+6. Displaying Results
+
+{% if result %}
+    <h2>{{ result }}</h2>
+    <p>Confidence: {{ confidence }}%</p>
+{% endif %}

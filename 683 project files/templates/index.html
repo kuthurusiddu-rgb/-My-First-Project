@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Disease Risk Prediction System</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="page-shell">
+        <div class="container py-4 py-md-5">
+
+            <div class="topbar glass-card px-3 px-md-4 py-3 mb-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <h6 class="mb-1 fw-bold text-dark-blue">Welcome, {{ user_name }}</h6>
+                        <small class="text-muted">Secure Clinical Prediction Dashboard</small>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-soft">
+                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                        </a>
+                        <a href="{{ url_for('export_csv') }}" class="btn btn-soft">
+                            <i class="bi bi-download me-1"></i> Export CSV
+                        </a>
+                        <a href="{{ url_for('logout') }}" class="btn btn-soft-danger">
+                            <i class="bi bi-box-arrow-right me-1"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                <div class="mb-4">
+                  {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} rounded-4 shadow-sm border-0 mb-2">
+                        {{ message }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
+            <div class="glass-card hero-card p-4 p-md-5 mb-4">
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-8">
+                        <span class="badge soft-badge mb-3">AI Clinical Risk Assessment</span>
+                        <h1 class="main-title">Heart Disease Risk Prediction System</h1>
+                        <p class="sub-text mb-3">
+                            Ensemble learning based intelligent screening platform for heart disease risk prediction, model analysis, and professional reporting.
+                        </p>
+
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="mini-chip">
+                                <i class="bi bi-cpu me-2"></i>{{ model_name }}
+                            </div>
+                            <div class="mini-chip">
+                                <i class="bi bi-bar-chart-line me-2"></i>Accuracy: {{ accuracy }}%
+                            </div>
+                            <div class="mini-chip">
+                                <i class="bi bi-database me-2"></i>Records: {{ total_records }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 text-center">
+                        <div class="hero-circle mx-auto">
+                            <div>
+                                <h2>{{ accuracy }}%</h2>
+                                <p>Model Accuracy</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if validation_error %}
+            <div class="alert alert-danger rounded-4 shadow-sm border-0 mb-4">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ validation_error }}
+            </div>
+            {% endif %}
+
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="glass-card stat-card p-4 h-100">
+                        <div class="stat-icon-wrap">
+                            <i class="bi bi-heart-pulse-fill stat-icon"></i>
+                        </div>
+                        <h5>Positive Cases</h5>
+                        <p>{{ positive_cases }}</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="glass-card stat-card p-4 h-100">
+                        <div class="stat-icon-wrap">
+                            <i class="bi bi-shield-check stat-icon"></i>
+                        </div>
+                        <h5>Negative Cases</h5>
+                        <p>{{ negative_cases }}</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="glass-card stat-card p-4 h-100">
+                        <div class="stat-icon-wrap">
+                            <i class="bi bi-diagram-3-fill stat-icon"></i>
+                        </div>
+                        <h5>Best Model</h5>
+                        <p>{{ model_name }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="glass-card p-4 h-100">
+                        <div class="section-heading mb-4">
+                            <h3 class="section-title mb-1">Patient Clinical Input</h3>
+                            <p class="section-subtitle mb-0">Enter patient parameters to generate the clinical prediction report</p>
+                        </div>
+
+                        <form method="POST" class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Age</label>
+                                <input type="number" class="form-control custom-input" name="age" min="1" max="120" step="1" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Sex</label>
+                                <select class="form-select custom-input" name="sex" required>
+                                    <option value="">Select</option>
+                                    <option value="1">Male</option>
+                                    <option value="0">Female</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Chest Pain Type</label>
+                                <select class="form-select custom-input" name="cp" required>
+                                    <option value="">Select</option>
+                                    <option value="0">Typical Angina</option>
+                                    <option value="1">Atypical Angina</option>
+                                    <option value="2">Non-anginal Pain</option>
+                                    <option value="3">Asymptomatic</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Resting Blood Pressure</label>
+                                <input type="number" class="form-control custom-input" name="trestbps" min="50" max="250" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Cholesterol</label>
+                                <input type="number" class="form-control custom-input" name="chol" min="100" max="700" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Fasting Blood Sugar > 120</label>
+                                <select class="form-select custom-input" name="fbs" required>
+                                    <option value="">Select</option>
+                                    <option value="1">Yes</option>
+                                    <option value="0">No</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Resting ECG</label>
+                                <select class="form-select custom-input" name="restecg" required>
+                                    <option value="">Select</option>
+                                    <option value="0">Normal</option>
+                                    <option value="1">ST-T Abnormality</option>
+                                    <option value="2">Left Ventricular Hypertrophy</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Maximum Heart Rate</label>
+                                <input type="number" class="form-control custom-input" name="thalach" min="50" max="250" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Exercise Induced Angina</label>
+                                <select class="form-select custom-input" name="exang" required>
+                                    <option value="">Select</option>
+                                    <option value="1">Yes</option>
+                                    <option value="0">No</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Oldpeak</label>
+                                <input type="number" class="form-control custom-input" name="oldpeak" min="0" max="10" step="0.1" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Slope</label>
+                                <select class="form-select custom-input" name="slope" required>
+                                    <option value="">Select</option>
+                                    <option value="0">Upsloping</option>
+                                    <option value="1">Flat</option>
+                                    <option value="2">Downsloping</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Number of Major Vessels (ca)</label>
+                                <select class="form-select custom-input" name="ca" required>
+                                    <option value="">Select</option>
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Thal</label>
+                                <select class="form-select custom-input" name="thal" required>
+                                    <option value="">Select</option>
+                                    <option value="1">Normal</option>
+                                    <option value="2">Fixed Defect</option>
+                                    <option value="3">Reversible Defect</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Doctor Notes / Remarks</label>
+                                <textarea class="form-control custom-input" name="doctor_notes" rows="4" placeholder="Enter additional clinical notes">{{ doctor_notes or '' }}</textarea>
+                            </div>
+
+                            <div class="col-12 mt-3">
+                                <button class="btn predict-btn w-100" type="submit">
+                                    <i class="bi bi-search-heart me-2"></i>Generate Prediction Report
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="glass-card p-4 mb-4">
+                        <div class="section-heading mb-3">
+                            <h3 class="section-title mb-1">Model Comparison</h3>
+                            <p class="section-subtitle mb-0">Accuracy of individual models used in the project</p>
+                        </div>
+                        <div class="chart-box">
+                            <canvas id="modelChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-4 mb-4">
+                        <div class="section-heading mb-3">
+                            <h3 class="section-title mb-1">Feature Importance</h3>
+                            <p class="section-subtitle mb-0">Relative contribution of clinical features</p>
+                        </div>
+                        <div class="chart-box feature-chart-box">
+                            <canvas id="featureChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-4">
+                        <div class="section-heading mb-3">
+                            <h3 class="section-title mb-1">Model Metrics</h3>
+                            <p class="section-subtitle mb-0">Precision, recall, and F1-score comparison</p>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table history-table align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Model</th>
+                                        <th>Accuracy</th>
+                                        <th>Precision</th>
+                                        <th>Recall</th>
+                                        <th>F1 Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for model, metrics in all_model_metrics.items() %}
+                                    <tr>
+                                        <td>{{ model }}</td>
+                                        <td>{{ metrics.accuracy }}%</td>
+                                        <td>{{ metrics.precision }}%</td>
+                                        <td>{{ metrics.recall }}%</td>
+                                        <td>{{ metrics.f1 }}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if prediction_text %}
+            <div class="row g-4 mt-1">
+                <div class="col-lg-5">
+                    <div class="glass-card p-4 h-100">
+                        <div class="section-heading mb-3">
+                            <h3 class="section-title mb-1">Prediction Confidence</h3>
+                            <p class="section-subtitle mb-0">Risk probability generated by the ensemble model</p>
+                        </div>
+                        <div class="chart-box confidence-chart-box">
+                            <canvas id="confidenceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-7">
+                    <div class="glass-card p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <div>
+                                <h3 class="section-title mb-1">Professional Prediction Report</h3>
+                                <p class="section-subtitle mb-0">AI-generated clinical assessment summary</p>
+                            </div>
+                            <span class="result-pill {{ result_class }}">{{ prediction_text }}</span>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <div class="info-box h-100">
+                                    <small>Patient ID</small>
+                                    <h4>{{ patient_id }}</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-box h-100">
+                                    <small>Confidence</small>
+                                    <h4>{{ probability }}%</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-box h-100">
+                                    <small>Risk Level</small>
+                                    <h4>{{ risk_level }}</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-box h-100">
+                                    <small>Model</small>
+                                    <h4>{{ model_name }}</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <div class="info-box h-100">
+                                    <small>Interpretation</small>
+                                    <h4>{{ risk_message }}</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h5 class="mini-title">Patient Input Summary</h5>
+                        <div class="table-responsive">
+                            <table class="table table-borderless custom-table align-middle mb-0">
+                                <tbody>
+                                    {% for key, value in patient_data.items() %}
+                                    <tr>
+                                        <td class="label-col">{{ key }}</td>
+                                        <td>{{ value }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h5 class="mini-title mt-4">High-Level Recommendations</h5>
+                        <ul class="suggestion-list">
+                            {% for item in suggestions %}
+                            <li>{{ item }}</li>
+                            {% endfor %}
+                        </ul>
+
+                        {% if doctor_notes %}
+                        <h5 class="mini-title mt-4">Doctor Notes</h5>
+                        <div class="disclaimer">
+                            {{ doctor_notes }}
+                        </div>
+                        {% endif %}
+
+                        <div class="report-actions d-flex flex-wrap gap-2 mt-3">
+                            <a href="{{ url_for('report') }}" class="btn btn-outline-primary-custom">
+                                <i class="bi bi-printer me-2"></i>Printable Report
+                            </a>
+                            <a href="{{ url_for('download_pdf') }}" class="btn btn-primary-custom">
+                                <i class="bi bi-file-earmark-pdf me-2"></i>Download PDF Report
+                            </a>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary-custom">
+                                <i class="bi bi-graph-up-arrow me-2"></i>View Dashboard
+                            </a>
+                        </div>
+
+                        <div class="disclaimer mt-4">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            This AI-generated report is intended for academic and educational use only. It should not be used as a substitute for professional medical diagnosis.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        const modelChartEl = document.getElementById('modelChart');
+        if (modelChartEl) {
+            new Chart(modelChartEl, {
+                type: 'bar',
+                data: {
+                    labels: [{% for key in model_accuracies.keys() %}"{{ key }}",{% endfor %}],
+                    datasets: [{
+                        label: 'Accuracy (%)',
+                        data: [{% for value in model_accuracies.values() %}{{ value }},{% endfor %}],
+                        backgroundColor: 'rgba(96, 165, 250, 0.85)',
+                        borderRadius: 10,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: { color: 'rgba(148, 163, 184, 0.15)' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        const featureChartEl = document.getElementById('featureChart');
+        if (featureChartEl) {
+            new Chart(featureChartEl, {
+                type: 'bar',
+                data: {
+                    labels: [{% for key in feature_importance.keys() %}"{{ key }}",{% endfor %}],
+                    datasets: [{
+                        label: 'Importance',
+                        data: [{% for value in feature_importance.values() %}{{ value }},{% endfor %}],
+                        backgroundColor: 'rgba(203, 213, 225, 0.95)',
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(148, 163, 184, 0.15)' }
+                        },
+                        y: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        {% if confidence_chart %}
+        const confidenceChartEl = document.getElementById('confidenceChart');
+        if (confidenceChartEl) {
+            new Chart(confidenceChartEl, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Risk Probability', 'Remaining'],
+                    datasets: [{
+                        data: [{{ confidence_chart[0] }}, {{ confidence_chart[1] }}],
+                        backgroundColor: [
+                            'rgba(96, 165, 250, 0.92)',
+                            'rgba(226, 232, 240, 0.96)'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    cutout: '72%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        {% endif %}
+    </script>
+</body>
+</html>
